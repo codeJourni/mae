@@ -1,0 +1,29 @@
+# ---- Core GPU PyTorch (choose correct CUDA wheel below) ----
+# IMPORTANT: DO NOT install torch from PyPI. Install manually before this file:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# or whichever CUDA version PyTorch recommends for your GPU.
+
+# ---- MAE + ViT dependencies ----
+timm==0.6.13
+einops
+scipy
+numpy>=1.26
+matplotlib
+scikit-learn
+tqdm
+
+# ---- Image datasets ----
+torchvision
+wget
+Pillow
+
+# ---- For perceptual loss ----
+torchmetrics
+# OR: torchvision already includes VGG19 pretrained weights
+
+# ---- Utilities ----
+pyyaml
+opencv-python
+
+# ---- Training / environment ----
+tensorboard
