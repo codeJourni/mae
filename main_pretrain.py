@@ -23,9 +23,30 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 import timm
-
-assert timm.__version__ == "0.3.2"  # version check
 import timm.optim.optim_factory as optim_factory
+
+# ----------------------------------------------------------------------
+# Fallback for timm.optim.optim_factory.add_weight_decay, which was
+# removed/renamed in newer timm versions. This reproduces the older
+# behavior: separate parameter groups with/without weight decay.
+# ----------------------------------------------------------------------
+if hasattr(optim_factory, "add_weight_decay"):
+    add_weight_decay = optim_factory.add_weight_decay
+else:
+    def add_weight_decay(model, weight_decay=0.05, skip_list=(), norm_weight_decay=None):
+        decay, no_decay = [], []
+        for name, param in model.named_parameters():
+            if not param.requires_grad:
+                continue  # frozen weights
+            # Treat 1D parameters and biases as no-decay (LayerNorm, bias, etc.)
+            if param.ndim == 1 or name.endswith(".bias"):
+                no_decay.append(param)
+            else:
+                decay.append(param)
+        return [
+            {"params": decay, "weight_decay": weight_decay},
+            {"params": no_decay, "weight_decay": 0.0},
+        ]
 
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
@@ -56,6 +77,9 @@ def get_args_parser():
     parser.add_argument('--norm_pix_loss', action='store_true',
                         help='Use (per-patch) normalized pixels as targets for computing loss')
     parser.set_defaults(norm_pix_loss=False)
+    
+    parser.add_argument("--lambda-perc", type=float, default=0.0,
+                        help="weight for perceptual (VGG) reconstruction loss; 0 disables it")
 
     # Optimizer parameters
     parser.add_argument('--weight_decay', type=float, default=0.05,
@@ -176,7 +200,7 @@ def main(args):
         model_without_ddp = model.module
     
     # following timm: set wd as 0 for bias and norm layers
-    param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
+    param_groups = add_weight_decay(model_without_ddp, args.weight_decay)
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     print(optimizer)
     loss_scaler = NativeScaler()

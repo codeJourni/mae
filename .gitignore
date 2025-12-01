@@ -1,5 +1,17 @@
-echo ".venv/
+# Python virtual environments
+.venv/
+
+# Byte-compiled / cache files
 __pycache__/
+**/__pycache__/
 *.pyc
-*/__pycache__/
-" > .gitignore
+
+# Build & output directories
+out_baseline/
+out_perc/
+
+# VS Code
+.vscode/
+
+# Dataset (do NOT commit!)
+data/
